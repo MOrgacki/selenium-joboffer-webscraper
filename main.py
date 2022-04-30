@@ -1,3 +1,4 @@
+import email
 from time import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -14,6 +15,10 @@ driver = webdriver.Chrome('./chromedriver')
 company_data_array = []
 url =  "https://www.pracuj.pl/pracuj"
 
+def cfDecodeEmail(encodedString):
+    r = int(encodedString[:2],16)
+    email = ''.join([chr(int(encodedString[i:i+2], 16) ^ r) for i in range(2, len(encodedString), 2)])
+    return email
 
 def log_to_file(file_name, text, variable ):
         with open(file_name, 'a') as f:
@@ -43,7 +48,7 @@ def assign_cookies(driver: webdriver):
     return request
     
 def parse_html(content) -> BeautifulSoup:
-    website_html = BeautifulSoup(content, "html5lib")
+    website_html = BeautifulSoup(content, "lxml")
     return website_html
 
 def parse_tiles(website_html: BeautifulSoup) -> int:
@@ -58,7 +63,13 @@ def parse_tiles(website_html: BeautifulSoup) -> int:
             try:
                 WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-test='anchor-apply'][href^=http]")))
             except:
-                print("Brak button aplikuj: ", job_offer_url)
+                try:
+                    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-test='section-archived']")))
+                    log_to_file('offers_archived.txt', 'Offer archived: ',job_offer_url)
+                    break
+                except:
+                    print("Brak button aplikuj: ", job_offer_url)
+                    break
             # try:
             #     driver.get(job_offer_url)
             #     WebDriverWait(driver, 20).until(EC.element_attribute_to_include((By.CSS_SELECTOR, "a[data-test='anchor-apply'][href^=http]")))
@@ -87,42 +98,70 @@ def parse_tiles(website_html: BeautifulSoup) -> int:
                     company_link = offer_html.select_one("[data-test='button-employer-link']").get('href')
                     page = s.get(company_link)
                     print(company_link)
+                    company_data_html = parse_html(page.content)
                 except:
                     try:
                         company_link2 = offer_html.select_one("a.ep-profile-link").get('href')
                         page = s.get(company_link2)
                         print("erekturer link2", company_link2)
+                        company_data_html = parse_html(page.content)
                     except:
                         try:
                             company_link3 = offer_html.select_one("a.employers-MuiButtonBase-root").get('href')
+                            # driver.get(company_link3)
                             page = s.get(company_link3)
                             print("erekturer link3", company_link3)
+                            company_data_html = parse_html(page.text)
+                            for title in company_data_html.find_all('title'):
+                                print(title.get_text())
+                            break
                         except:
                             log_to_file('logs.txt', 'New case!',company_link3)
-                
                 #company details view
-                company_data_html = parse_html(page.content)
                 company_data = company_data_html.select(".sidebar > .contact-details > div > div.text")
+                # print(company_data[0].find("p") is not None)
                 try:
                     company_data = company_data_html.select(".sidebar > .contact-details > div > div.text")
-                    if company_data.select_one("h3"):
-                        company_named = company_data.select("h3")
-                    if company_data.select_one("[itemprop='address']"):
-                        company_address = company_data.select("[itemprop='address']")
-                        for br in company_address('br'):
-                            br.replace_with('\n')
-                    if company_data.select_one("[itemprop='taxID']"):
-                        company_tax = company_data.select("[itemprop='taxID']")
+                    # print(company_data[0].find("h3") is not None)
+                    if company_data[0].find("h3") is not None:
+                        company_named = company_data[0].select("h3")
+                        text = company_named[0].get_text()
+                        print(text)
+                    if company_data[0].find("p", itemprop="address") is not None:
+                        company_address = company_data[0].find("p", itemprop="address")
+                        text = company_address.get_text()
+                        print(text)
+                        if "protected" in text:
+                           protected_email = company_data[0].find("p", itemprop="address").find("a", {"class":"__cf_email__"} )
+                           encoded_email = protected_email.get("data-cfemail")
+                           print(cfDecodeEmail(encoded_email)) 
+                    if company_data[0].find("p", itemprop="taxID") is not None:
+                        company_tax = company_data[0].find("p", itemprop="taxID")
+                        text = company_tax.get_text()
+                        print(text)
+                    if company_data[0].find("a", itemprop="sameAs") is not None:
+                        company_www_link = company_data[0].find("a", itemprop="sameAs")
+                        text = company_www_link.get_text()
+                        print(text)
                 except:
-                    company_data = company_data_html.select("ep-profile-link")
+                    try:
+                        company_data = company_data_html.select("div.main-info > div.title-container > h1")
+                        text = company_data[0].get_text()
+                        print(text)
+                        try:
+                            company_data = company_data_html.select("ep-profile-link")
+                        except:
+                            log_to_file("companies.txt","Here is data for company without address: ",company_data_html)
+                    except:
+                        log_to_file("companies.txt","Here is data for company without address: ",company_data_html)
                 
                 #nazwa-#div.default-box.contact-details > div > div.text > h3
                 #addres-#div.default-box.contact-details > div > div.text > [itemprop='address']
                 #nip-div.default-box.contact-details > div > div.text > [itemprop='taxID']
                 #itp-itd   
-                print(company_named)
-                print(company_address)
-                print(company_tax)
+
+
+ 
                 # company_data_array.insert(len(company_data_array), company_data)
                 # print(company_data_array)
         
@@ -142,10 +181,10 @@ s = assign_cookies(driver)
 try:
     WebDriverWait(driver=driver, timeout=10).until(EC.title_contains(("Oferty pracy")))
 except:
-    page = s.get(url)
+    driver.get(url)
 
 
-website_html = parse_html(page.content)
+website_html = parse_html(driver.page_source)
 #czytamy liczbe stron
 temp_nr = website_html.select(Locator.pagination_number)
 page_nr = int(temp_nr[0].next_element.replace('\n', ''))
