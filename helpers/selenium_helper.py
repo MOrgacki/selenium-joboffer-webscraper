@@ -1,3 +1,4 @@
+
 from configparser import ConfigParser
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -7,17 +8,18 @@ from helpers.util_helper import UtilHelper
 from selenium.webdriver.remote.webdriver import BaseWebDriver
 from selenium.webdriver.chrome.options import Options
 from locator import Locator
+import itertools
 
 
 class SeleniumHelper(BaseWebDriver):
 
     def __init__(self) -> None:
-        # self.driver = webdriver.Chrome('./chromedriver')
-        options = Options()
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        self.driver = webdriver.Chrome(
-            './chromedriver', chrome_options=options)
+        self.driver = webdriver.Chrome('./chromedriver')
+        # options = Options()
+        # options.add_argument('--headless')
+        # options.add_argument('--disable-gpu')
+        # self.driver = webdriver.Chrome(
+        #     './chromedriver', chrome_options=options)
 
     def login(self, username: str, password: str, login_url: ConfigParser) -> None:
         self.driver.get(login_url)
@@ -39,14 +41,14 @@ class SeleniumHelper(BaseWebDriver):
             by=By.CSS_SELECTOR, value=Locator.accept_cookies_btn)
         cookies_button.click()
 
-    def pass_apply_button(self, job_offer_url):
-        self.driver.get(job_offer_url)
+    def pass_apply_button(self, selenium_helper, job_offer_url):
+        selenium_helper.driver.get(job_offer_url)
         try:
-            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located(
+            WebDriverWait(selenium_helper.driver, 10).until(EC.presence_of_element_located(
                 (By.CSS_SELECTOR, Locator.apply_button_link)))
         except:
             try:
-                WebDriverWait(self.driver, 5).until(EC.presence_of_element_located(
+                WebDriverWait(selenium_helper.driver, 10).until(EC.presence_of_element_located(
                     (By.CSS_SELECTOR, Locator.archived_offer_button)))
                 UtilHelper.log_to_file('./logs/offers_archived.txt',
                                        'Offer archived: ', job_offer_url)
@@ -55,13 +57,21 @@ class SeleniumHelper(BaseWebDriver):
 
     def pass_company_link(self, job_offer_url):
         self.driver.get(job_offer_url+"#company-details")
-        try:
-            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, Locator.company_profile1_link)))
-        except:
-            try:
-                WebDriverWait(self.driver, 5).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, Locator.company_profile2_link)))
-            except:
-                WebDriverWait(self.driver, 5).until(EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, Locator.company_profile3_link)))
+        # try:
+        #     WebDriverWait(self.driver, 3).until(EC.presence_of_element_located(
+        #         (By.CSS_SELECTOR, Locator.company_profile1_link)))
+        # except:
+        #     try:
+        #         WebDriverWait(self.driver, 4).until(
+        #             EC.presence_of_element_located((By.CSS_SELECTOR, Locator.company_profile2_link)))
+        #     except:
+        #         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located(
+        #             (By.CSS_SELECTOR, Locator.company_profile3_link)))
+        WebDriverWait(self.driver, 30).until(EC.any_of(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "[data-test='button-employer-link']")),
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "a.ep-profile-link")),
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "a.employers-MuiButtonBase-root"))
+        ))

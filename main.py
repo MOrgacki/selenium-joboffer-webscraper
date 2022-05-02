@@ -1,4 +1,5 @@
-from time import time
+
+import selenium
 from helpers.selenium_helper import SeleniumHelper
 from selenium.webdriver.remote.webdriver import WebDriver
 import requests
@@ -8,7 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from crawler import Crawler
 from locator import Locator
 from selenium.webdriver.support import expected_conditions as EC
-
+import time
+import copy
 
 # Config load
 config = configparser.ConfigParser()
@@ -22,6 +24,7 @@ result_csv = config['FILES']['RESULT']
 
 # Objects load
 selenium_helper = SeleniumHelper()
+selenium_helper2 = SeleniumHelper()
 driver = selenium_helper.driver
 crawler = Crawler()
 
@@ -29,6 +32,7 @@ crawler = Crawler()
 company_data_array = []
 starting_page = 0
 which_case = None
+futures = []
 
 
 def assign_cookies(selenium: WebDriver):
@@ -45,29 +49,54 @@ def main():
     selenium_helper.cookies_handler()
     s = assign_cookies(driver)
     try:
+        time.sleep(5)
+        driver.get(main_url)
         WebDriverWait(driver=driver, timeout=10).until(
             EC.title_contains(("Oferty pracy")))
     except:
-        driver.get(main_url)
+        pass
     offers_list_html = crawler.parse_html(driver.page_source)
     # count pages
     temp_nr = offers_list_html.select(Locator.pagination_number)
     page_nr = int(temp_nr[0].next_element.replace('\n', ''))
     ### DLA TESTU JEST HARDCODED 2!!!##########
-    page_nr = 2
+    page_nr = 20
     #####!!!!!!!!!!!!!!##########
-    for starting_page in range(1, page_nr, 1):
+
+    # with ThreadPoolExecutor(max_workers=2) as executor:
+    #     for starting_page in executor.map(functools.partial(crawler.parse_tiles,
+    #                                       s, company_data_array, selenium_helper), range(1, page_nr, 1)):
+    #         print(starting_page)
+
+    # crawler.parse_tiles(starting_page, offers_list_html,
+    #                     s, company_data_array, selenium_helper)
+    # wait(futures)
+
+    # for starting_page in range(1, page_nr, 1):
+    #     print("Strona nr: ", starting_page)
+    #     start = time()
+    #     crawler.parse_tiles(starting_page, offers_list_html,
+    #                         s, company_data_array, selenium_helper)
+    #     end = time()
+    #     print(f"Stronie nr {starting_page} zajęło wykonanie:",
+    #           (end - start)/60, 'min')
+    #     page = s.get(main_url + "?pn=" + str(starting_page))
+    #     offers_list_html = crawler.parse_html(page.content)
+
+    driver2 = copy.copy(driver)
+    drivers_instance = [driver, driver2]
+    for starting_page in range(1, page_nr+1, 1):
         print("Strona nr: ", starting_page)
-        start = time()
-        crawler.parse_tiles(starting_page, offers_list_html,
-                            s, company_data_array, selenium_helper)
-        end = time()
+        start = time.time()
+        crawler.parse_tiles(
+            s, company_data_array, selenium_helper, starting_page, drivers_instance)
+        end = time.time()
         print(f"Stronie nr {starting_page} zajęło wykonanie:",
               (end - start)/60, 'min')
         page = s.get(main_url + "?pn=" + str(starting_page))
         offers_list_html = crawler.parse_html(page.content)
     df = pd.DataFrame(company_data_array, columns=[
-                      "Nazwa", "Adres", "Email", "Strona WWW"])
+        "Nazwa", "Adres", "Email", "Strona WWW"])
     df.to_csv(temp_csv, index=False, encoding='utf-8')
     data = pd.read_csv(
         r"/Applications/work/Private/Pracuj-WebScraping/temp.csv")
