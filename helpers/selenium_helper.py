@@ -14,12 +14,12 @@ import itertools
 class SeleniumHelper(BaseWebDriver):
 
     def __init__(self) -> None:
-        self.driver = webdriver.Chrome('./chromedriver')
-        # options = Options()
-        # options.add_argument('--headless')
-        # options.add_argument('--disable-gpu')
-        # self.driver = webdriver.Chrome(
-        #     './chromedriver', chrome_options=options)
+        # self.driver = webdriver.Chrome('./chromedriver')
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        self.driver = webdriver.Chrome(
+            './chromedriver', chrome_options=options)
 
     def login(self, username: str, password: str, login_url: ConfigParser) -> None:
         self.driver.get(login_url)

@@ -8,7 +8,7 @@ import requests
 from helpers.selenium_helper import SeleniumHelper
 from locator import Locator
 from time import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, wait
+
 import functools
 
 
@@ -156,13 +156,13 @@ class Crawler:
         #             self.scrape_job_tiles, count, s, company_data_array, par[0], selenium_helper))
         #         count = count+1
         # print(futures)
-        try:
-            for job_tile in job_tiles:
-                self.scrape_job_tiles(
-                    count, session, company_data_array, job_tile, selenium_helper)
-                count = count+1
-        except:
+        # try:
+        for job_tile in job_tiles:
+            self.scrape_job_tiles(
+                count, session, company_data_array, job_tile, selenium_helper)
             count = count+1
+        # except:
+        #     count = count+1
         # except:
         #     pass
 
