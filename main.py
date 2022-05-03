@@ -25,7 +25,24 @@ result_csv = config['FILES']['RESULT']
 # Objects load
 selenium_helper = SeleniumHelper()
 selenium_helper2 = SeleniumHelper()
+selenium_helper3 = SeleniumHelper()
+selenium_helper4 = SeleniumHelper()
+selenium_helper5 = SeleniumHelper()
+selenium_helper6 = SeleniumHelper()
+selenium_helper7 = SeleniumHelper()
+selenium_helper8 = SeleniumHelper()
+selenium_helper9 = SeleniumHelper()
+selenium_helper10 = SeleniumHelper()
 driver = selenium_helper.driver
+driver2 = selenium_helper2.driver
+driver3 = selenium_helper3.driver
+driver4 = selenium_helper4.driver
+driver5 = selenium_helper5.driver
+driver6 = selenium_helper6.driver
+driver7 = selenium_helper7.driver
+driver8 = selenium_helper8.driver
+driver9 = selenium_helper9.driver
+driver10 = selenium_helper10.driver
 crawler = Crawler()
 
 # Local vars
@@ -47,7 +64,7 @@ def main():
     selenium_helper.login(
         username, password, login_url)
     selenium_helper.cookies_handler()
-    s = assign_cookies(driver)
+    session = assign_cookies(driver)
     try:
         time.sleep(5)
         driver.get(main_url)
@@ -83,23 +100,22 @@ def main():
     #     page = s.get(main_url + "?pn=" + str(starting_page))
     #     offers_list_html = crawler.parse_html(page.content)
 
-    driver2 = copy.copy(driver)
-    drivers_instance = [driver, driver2]
+    # driver2.get("https://www.onet.pl")
     for starting_page in range(1, page_nr+1, 1):
         print("Strona nr: ", starting_page)
         start = time.time()
         crawler.parse_tiles(
-            s, company_data_array, selenium_helper, starting_page, drivers_instance)
+            session, company_data_array, selenium_helper, starting_page)
         end = time.time()
         print(f"Stronie nr {starting_page} zajęło wykonanie:",
               (end - start)/60, 'min')
-        page = s.get(main_url + "?pn=" + str(starting_page))
+        page = session.get(main_url + "?pn=" + str(starting_page))
         offers_list_html = crawler.parse_html(page.content)
     df = pd.DataFrame(company_data_array, columns=[
         "Nazwa", "Adres", "Email", "Strona WWW"])
     df.to_csv(temp_csv, index=False, encoding='utf-8')
     data = pd.read_csv(
-        r"/Applications/work/Private/Pracuj-WebScraping/temp.csv")
+        r"./temp.csv")
     data.drop_duplicates(keep='first', inplace=True)
     data.to_csv(result_csv)
     driver.quit()
