@@ -53,9 +53,8 @@ def main():
     # count pages
     temp_nr = offers_list_html.select(Locator.pagination_number)
     page_nr = int(temp_nr[0].next_element.replace('\n', ''))
-    ### DLA TESTU JEST HARDCODED 2!!!##########
+    ### TODO: TEST ONLY //pagenr2
     page_nr = 2
-    #####!!!!!!!!!!!!!!##########
     for starting_page in range(1, page_nr, 1):
         print("Strona nr: ", starting_page)
         start = time()
@@ -70,7 +69,7 @@ def main():
                       "Nazwa", "Adres", "Email", "Strona WWW"])
     df.to_csv(temp_csv, index=False, encoding='utf-8')
     data = pd.read_csv(
-        r"/Applications/work/Private/Pracuj-WebScraping/temp.csv")
+        r"/temp.csv")
     data.drop_duplicates(keep='first', inplace=True)
     data.to_csv(result_csv)
     driver.quit()

@@ -110,11 +110,6 @@ class Crawler:
                 if "system.erecruiter.pl" in page.url:
                     # job offer view
                     selenium_helper.pass_company_link(job_offer_url)
-                    # WebDriverWait(driver, 1).until(EC.any_of(
-                    #     EC.presence_of_element_located((By.CSS_SELECTOR, "[data-test='button-employer-link']")),
-                    #     EC.presence_of_element_located((By.CSS_SELECTOR, "a.ep-profile-link")),
-                    #     EC.presence_of_element_located((By.CSS_SELECTOR, "a.employers-MuiButtonBase-root"))
-                    # ))
                     offer_html = self.parse_html(
                         selenium_helper.driver.page_source)
                     which_case, name, company_data_html = self.scrape_offer_view(
