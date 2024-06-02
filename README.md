@@ -1,5 +1,3 @@
-# Job Offers Web Scraper
-
 This Python script is a web scraper for job offer listings. It scrapes job listings, logs any exceptions to a text log file, and saves the results to a CSV file.
 
 ## Features
